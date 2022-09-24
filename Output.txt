@@ -1,0 +1,7 @@
+Vertex Number of graph4
+firstShortestWay: 
+1 1 1 
+secondShortestWay: 
+2 2 2 
+thirdShortestWay: 
+3 3 3 
