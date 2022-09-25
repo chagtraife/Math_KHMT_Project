@@ -1,54 +1,99 @@
 
-
-/******************************************************************************
-
-Welcome to GDB Online.
-GDB online is an online compiler and debugger tool for C, C++, Python, Java, PHP, Ruby, Perl,
-C#, OCaml, VB, Swift, Pascal, Fortran, Haskell, Objective-C, Assembly, HTML, CSS, JS, SQLite, Prolog.
-Code, Compile, Run and Debug online from anywhere in world.
-
-*******************************************************************************/
 #include <iostream>
 #include <vector>
 using namespace std;
-using path = vector<int>;
+using path_t = vector<int>;
+using matrix_t = vector<vector<int>>;
+
+std::pair<path_t, int> dijkstra(int src, int dest, matrix_t adjacenyMatrix){
+    // use dijkstra:
+    int V = adjacenyMatrix.size();
+    int d[V] = {}; // d[v]: chi phí của nut nguồn tới nút đích v
+    int p[V] = {}; // P[v]: nút ngay trước nút v trên đường đi từ nguồn tới đích
+    bool T[V] = {};
+
+    int dmin;
+    int pmin = src;
+    for (int i = 0; i < V; i++){
+        T[pmin] = true;
+        int u = pmin;
+        dmin = 0;
+        for (int v = 0; v < V; v++){
+            if (adjacenyMatrix[u][v] > 0 && !T[v]){
+                if (d[v] == 0){
+                    d[v]= adjacenyMatrix[u][v];
+                    p[v] = u;
+                }
+                if (d[v] > d[u] + adjacenyMatrix[u][v]){
+                    d[v] = d[u] + adjacenyMatrix[u][v];
+                    p[v] = u;
+                }
+                if (dmin == 0 || dmin > d[v]){
+                    dmin = d[v];
+                    pmin = v;
+                }
+            }
+        }
+    }
+
+    int k = dest;
+    path_t shortestWay;
+    if (d[dest] > 0){
+        while (k != src)
+        {
+            shortestWay.push_back(p[k]);
+            k = p[k];
+        }
+    }
+    return std::make_pair(shortestWay, d[dest]);
+}
 
 class Graph {
 public:
-    Graph(vector<vector<int>> adjacenyMatrix): m_adjacenyMatrix(adjacenyMatrix)
+    Graph(matrix_t adjacenyMatrix): m_adjacenyMatrix(adjacenyMatrix)
     {
     };
-    path firstShortestWay();
-    path secondShortestWay();
-    path thirdShortestWay();
-    path getKShortestWay(int k);
+    path_t getFirstShortestWay(int src, int dest);
+    path_t getSecondShortestWay(int src, int dest);
+    path_t getThirdShortestWay(int src, int dest);
+    path_t getKShortestWay(int src, int dest, int k);
 
 private:
-    vector<vector<int>> m_adjacenyMatrix; 
+    matrix_t m_adjacenyMatrix; 
 };
 
-path Graph::firstShortestWay()
+path_t Graph::getFirstShortestWay(int src, int dest)
 {
-    // use dijkstra:
+    return dijkstra(src, dest, m_adjacenyMatrix).first;
+}
+
+path_t Graph::getSecondShortestWay(int src, int dest)
+{
+    path_t firstShortestWay = getFirstShortestWay(src, dest);
+    std::pair<path_t, int> secondShortestWay(path_t(), 0);
+    for (int i = 0; i < firstShortestWay.size() - 1; i++){
+        matrix_t matrix(m_adjacenyMatrix);
+        matrix[firstShortestWay[i]][firstShortestWay[i+1]] = 0;
+        matrix[firstShortestWay[i+1]][firstShortestWay[i]] = 0;
+        std::pair<path_t, int> shortestWay;
+        shortestWay = dijkstra(src, dest, matrix);
+        if (secondShortestWay.second == 0 || secondShortestWay.second > shortestWay.second){
+            secondShortestWay = shortestWay;
+        }
+    }
     
-    return path {1, 1, 1};
+    return secondShortestWay.first;
 }
 
-path Graph::secondShortestWay()
+path_t Graph::getThirdShortestWay(int src, int dest)
 {
 
-    return path {2, 2, 2};
+    return path_t {3, 3, 3};
 }
 
-path Graph::thirdShortestWay()
+path_t Graph::getKShortestWay(int src, int dest, int k)
 {
-
-    return path {3, 3, 3};
-}
-
-path Graph::getKShortestWay(int k)
-{
-    return path {4, 4, 4};
+    return path_t {4, 4, 4};
 }
 
 void init()
@@ -74,20 +119,22 @@ Graph getGraph()
     return Graph(adjacenyMatrix);
 };
 
+
+
 int main()
 {
     init();
     Graph graph = getGraph();
-    cout << "firstShortestWay: " << endl;
-    for (auto i: graph.firstShortestWay())
+    cout << "firstShortestWay 0 -> 2: " << endl;
+    for (auto i: graph.getFirstShortestWay(0, 2))
         std::cout << i << ' ';
 
-    cout << endl << "secondShortestWay: " <<endl;
-    for (auto i: graph.secondShortestWay())
+    cout << endl << "secondShortestWay 0 -> 2: " <<endl;
+    for (auto i: graph.getSecondShortestWay(0, 2))
         std::cout << i << ' ';
 
-    cout << endl << "thirdShortestWay: " << endl;
-    for (auto i: graph.thirdShortestWay())
+    cout << endl << "thirdShortestWay 0 -> 2: " << endl;
+    for (auto i: graph.getThirdShortestWay(0, 2))
         std::cout << i << ' ';
 
     return 0;
