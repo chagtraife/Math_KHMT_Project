@@ -1,13 +1,46 @@
 
 #include <iostream>
 #include <vector>
+#include <algorithm>
 using namespace std;
 using path_t = vector<int>;
 using matrix_t = vector<vector<int>>;
 
-std::pair<path_t, int> dijkstra(int src, int dest, matrix_t adjacenyMatrix){
+class Graph {
+public:
+    Graph(matrix_t adjacenyMatrix): m_adjacenyMatrix(adjacenyMatrix)
+    {
+        removeNodes.assign(size(), false);
+    };
+
+    matrix_t getMaxtix() const{
+        return m_adjacenyMatrix;
+    };
+
+    void removeEgde(int node_1, int node_2){
+        m_adjacenyMatrix[node_1][node_2] = 0;
+    };
+
+    int getWeight(int node_1, int node_2) {
+        return m_adjacenyMatrix[node_1][node_2];
+    }
+
+    int size(){
+        return m_adjacenyMatrix.size();
+    }
+
+    void removeNode(int node){
+        removeNodes[node] = true;
+    };
+
+    vector<bool> removeNodes;
+private:
+    matrix_t m_adjacenyMatrix;
+};
+
+path_t dijkstra(int src, int dest, Graph graph){
     // use dijkstra:
-    int V = adjacenyMatrix.size();
+    int V = graph.size();
     int d[V] = {}; // d[v]: chi phí của nut nguồn tới nút đích v
     int p[V] = {}; // P[v]: nút ngay trước nút v trên đường đi từ nguồn tới đích
     bool T[V] = {};
@@ -19,13 +52,13 @@ std::pair<path_t, int> dijkstra(int src, int dest, matrix_t adjacenyMatrix){
         int u = pmin;
         dmin = 0;
         for (int v = 0; v < V; v++){
-            if (adjacenyMatrix[u][v] > 0 && !T[v]){
+            if (graph.getWeight(u,v) > 0 && !T[v] && !graph.removeNodes[v]){
                 if (d[v] == 0){
-                    d[v]= adjacenyMatrix[u][v];
+                    d[v]= graph.getWeight(u,v);
                     p[v] = u;
                 }
-                if (d[v] > d[u] + adjacenyMatrix[u][v]){
-                    d[v] = d[u] + adjacenyMatrix[u][v];
+                if (d[v] > d[u] + graph.getWeight(u,v)){
+                    d[v] = d[u] + graph.getWeight(u,v);
                     p[v] = u;
                 }
                 if (dmin == 0 || dmin > d[v]){
@@ -38,6 +71,7 @@ std::pair<path_t, int> dijkstra(int src, int dest, matrix_t adjacenyMatrix){
 
     int k = dest;
     path_t shortestWay;
+    shortestWay.push_back(dest);
     if (d[dest] > 0){
         while (k != src)
         {
@@ -45,55 +79,93 @@ std::pair<path_t, int> dijkstra(int src, int dest, matrix_t adjacenyMatrix){
             k = p[k];
         }
     }
-    return std::make_pair(shortestWay, d[dest]);
+    std::reverse(shortestWay.begin(), shortestWay.end());
+    return shortestWay;
 }
 
-class Graph {
-public:
-    Graph(matrix_t adjacenyMatrix): m_adjacenyMatrix(adjacenyMatrix)
-    {
-    };
-    path_t getFirstShortestWay(int src, int dest);
-    path_t getSecondShortestWay(int src, int dest);
-    path_t getThirdShortestWay(int src, int dest);
-    path_t getKShortestWay(int src, int dest, int k);
-
-private:
-    matrix_t m_adjacenyMatrix; 
-};
-
-path_t Graph::getFirstShortestWay(int src, int dest)
-{
-    return dijkstra(src, dest, m_adjacenyMatrix).first;
-}
-
-path_t Graph::getSecondShortestWay(int src, int dest)
-{
-    path_t firstShortestWay = getFirstShortestWay(src, dest);
-    std::pair<path_t, int> secondShortestWay(path_t(), 0);
-    for (int i = 0; i < firstShortestWay.size() - 1; i++){
-        matrix_t matrix(m_adjacenyMatrix);
-        matrix[firstShortestWay[i]][firstShortestWay[i+1]] = 0;
-        matrix[firstShortestWay[i+1]][firstShortestWay[i]] = 0;
-        std::pair<path_t, int> shortestWay;
-        shortestWay = dijkstra(src, dest, matrix);
-        if (secondShortestWay.second == 0 || secondShortestWay.second > shortestWay.second){
-            secondShortestWay = shortestWay;
+path_t YenKSP(int src, int dest,  Graph graph, int K){
+    vector<path_t> A(K);
+   // Tính toán đường đi ngắn nhất đầu tiên nhờ vào thuật toán Dijkstra. Từ node bắt đầu đến node đích.
+   A[0] = dijkstra(src, dest, graph);
+   // Khởi tạo tập hợp B lưu trữ những đường đi có khả năng trở thành K đường đi ngắn nhất.
+   vector<path_t> B;
+  
+    for (int k = 1; k < K; k++){
+       // Giả định node-I thỏa mãn Ak-I = Rk-I + Sk-I, với node-I thuộc Ak-1
+        for (int i = 0; i < size(A[k - 1]) - 1; i++){
+            Graph newGraph(graph);
+           // Xác định node-I trung gian là node bắt đầu để tính Sk-i
+           int spurNode = A[k-1][i];
+           // Xác định Rk-I là đường đi từ node-1 đến node-I bằng cách đi Ak-1
+           path_t rootPath (A[k-1].begin(), A[k-1].begin() + i);
+          
+            for (int j = 0; j < k; j++){
+                path_t p = A[j];
+                path_t p_(p.begin(), p.begin()+i);
+                if (std::equal(rootPath.begin(), rootPath.end(), p_.begin())){
+                    // Remove the links that are part of the previous shortest paths which share the same root path.
+                    newGraph.removeEgde(p[i], p[i+1]);
+                }
+            }
+          
+            for (int node : rootPath){
+                newGraph.removeNode(node);
+            }
+          
+           // Tính toán Sk-I với điểm bắt đầu là I và điểm kết thúc là node-n bằng thuật toán Dijkstra.
+           path_t spurPath = dijkstra(spurNode, dest, newGraph);
+          
+           // Kết quả đường đi với node-I trung gian được tính từ kết quả Rk-I + Sk-i
+            path_t totalPath(rootPath);
+            totalPath.insert( totalPath.end(), spurPath.begin(), spurPath.end());
+           // Lưu kết quả đường đi thành một kết quả có khả năng trở thành một đường đi ngắng nhất.
+           if (!totalPath.empty()){
+                B.push_back(totalPath);
+           }
         }
+                  
+        if(B.empty()){
+            break;
+            // Nếu tập hợp B là rỗng, xác định thuật toán kết thúc, không thể tìm đủ k đường đi.
+        }
+           
+        // Sắp xếp tập hợp B theo giá trị độ dài những đường đi khả dĩ tăng dần.
+        int d_min = 0;
+        int bMinId = 0;
+        for (int i = 0; i < B.size(); i++){
+            path_t p = B.at(i);
+            int d = 0;
+            for (int j = 0; j < p.size()-1; j++){
+                d += graph.getWeight(j,j+1);
+            }
+
+            if (d_min == 0 || d_min > d){
+                d_min = d;
+                bMinId = i;
+            }
+        }
+
+        // Lưu giá trị của đường đi thứ k bằng đường đi ngắn nhất có trong B.
+        A[k] = B[bMinId];
+        // Loại kết quả Ak ra khỏi B.
+        B.erase(B.begin() + bMinId);
     }
-    
-    return secondShortestWay.first;
+   return A[K-1];
 }
 
-path_t Graph::getThirdShortestWay(int src, int dest)
+path_t getFirstShortestWay(int src, int dest, Graph graph)
 {
-
-    return path_t {3, 3, 3};
+    return dijkstra(src, dest, graph);
 }
 
-path_t Graph::getKShortestWay(int src, int dest, int k)
+path_t getSecondShortestWay(int src, int dest, Graph graph)
 {
-    return path_t {4, 4, 4};
+    return YenKSP(src, dest, graph, 2);
+}
+
+path_t getThirdShortestWay(int src, int dest, Graph graph)
+{
+    return YenKSP(src, dest, graph, 3);
 }
 
 void init()
@@ -106,7 +178,7 @@ Graph getGraph()
 {
     int V;
     scanf("%d", &V);
-    cout << "Vertex Number of graph" << V << endl;
+    cout << "Vertex Number of graph: " << V << endl;
     vector<vector<int>> adjacenyMatrix; 
     
     for (int i = 0; i < V; i++) {
@@ -119,22 +191,20 @@ Graph getGraph()
     return Graph(adjacenyMatrix);
 };
 
-
-
 int main()
 {
     init();
     Graph graph = getGraph();
-    cout << "firstShortestWay 0 -> 2: " << endl;
-    for (auto i: graph.getFirstShortestWay(0, 2))
+    cout << "firstShortestWay 0 -> 4: " << endl;
+    for (auto i: getFirstShortestWay(0, 4, graph))
         std::cout << i << ' ';
 
-    cout << endl << "secondShortestWay 0 -> 2: " <<endl;
-    for (auto i: graph.getSecondShortestWay(0, 2))
+    cout << endl << "secondShortestWay 0 -> 4: " <<endl;
+    for (auto i: getSecondShortestWay(0, 4, graph))
         std::cout << i << ' ';
 
-    cout << endl << "thirdShortestWay 0 -> 2: " << endl;
-    for (auto i: graph.getThirdShortestWay(0, 2))
+    cout << endl << "thirdShortestWay 0 -> 4: " << endl;
+    for (auto i: getThirdShortestWay(0, 4, graph))
         std::cout << i << ' ';
 
     return 0;
