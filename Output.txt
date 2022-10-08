@@ -1,7 +1,7 @@
-Vertex Number of graph: 5
-firstShortestWay 0 -> 4: 
-0 2 4 
-secondShortestWay 0 -> 4: 
-0 1 2 4 
-thirdShortestWay 0 -> 4: 
-0 1 3 4 
+V: 59
+firstShortestWay 0 -> 58
+0 2 8 26 56 10 50 51 11 30 25 31 33 53 58 
+secondShortestWay 0 -> 58
+0 2 12 13 20 21 19 38 23 37 25 31 33 53 58 
+thirdShortestWay 0 -> 58
+0 2 8 27 28 17 18 29 22 30 25 31 33 53 58 
