@@ -52,10 +52,11 @@ def hoshen_Kopelman(binaryImg):
     index_arr = [0]
     index_arr[0] = find(0)
     print(index_arr[0])
-    for i in range(largest_label+1):
+    for i in range(largest_label + 1):
         if find(i) not in index_arr:
             index_arr.append(labels[i])
 
+    print(index_arr)
 
     idxImg = np.zeros((n_rows, n_columns), dtype=int)
     for x in range(0, n_rows):
@@ -63,12 +64,41 @@ def hoshen_Kopelman(binaryImg):
             if (label[x, y] > 0):
                 idxImg[x, y] = index_arr.index(find(label[x, y]))
 
-    return idxImg
+    return idxImg, index_arr
+
+
+def FindPosition(label_img, index_arr):
+    position = []
+    index_arr.remove(0)
+    n_rows = len(label_img)
+    n_columns = len(label_img[0])
+    for x in range(0, n_rows):
+        for y in range(0, n_columns):
+            if label_img[x, y] in index_arr:
+                index_arr.remove(label_img[x, y])
+                position.append([y+10, x+30])
+    print(position)
+    return position
+
+
+def addTextImage(resPosition, img):
+    imageText = img.copy()
+    for i in range(len(resPosition)):
+        text = str(i)
+        # org: Where you want to put the text
+        org = resPosition[i]
+        print(resPosition[i])
+        # write the text on the input image
+        cv.putText(imageText, text, org, fontFace=cv.FONT_HERSHEY_COMPLEX, fontScale=1, color=(0, 0, 0))
+
+
+    return imageText
 
 
 ###############################################
 # load img
 binary_img = cv.imread("/Users/truongthinh/Downloads/shape2.png", 2)  # cv.IMREAD_GRAYSCALE
+output = binary_img.copy()
 
 for i, v1 in enumerate(binary_img):
     for j, v2 in enumerate(v1):
@@ -77,9 +107,10 @@ for i, v1 in enumerate(binary_img):
 
 ################################################
 
-label_img = hoshen_Kopelman(binary_img)
+label_img, index_arr = hoshen_Kopelman(binary_img)
+Position = FindPosition(label_img, index_arr)
+resImage = addTextImage(Position, output)
 
-plt.imshow(label_img, cmap="gray")
+plt.imshow(resImage, cmap="gray")
 plt.axis("off")
 plt.show()
-
